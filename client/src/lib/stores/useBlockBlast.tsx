@@ -6,6 +6,7 @@ export type BlockType = {
   id: string;
   shape: boolean[][];
   color: string;
+  used?: boolean; // Track if block has been used
 };
 
 export type CellType = {
@@ -21,6 +22,8 @@ export type GameState = {
   canPlace: boolean;
   score: number;
   isGameOver: boolean;
+  isDragging: boolean;
+  usedBlockCount: number; // Track how many blocks have been used
   
   // Actions
   selectBlock: (index: number) => void;
@@ -29,6 +32,7 @@ export type GameState = {
   checkAndClearRows: () => void;
   resetGame: () => void;
   moveHover: (direction: 'up' | 'down' | 'left' | 'right') => void;
+  setIsDragging: (isDragging: boolean) => void;
 };
 
 const GRID_SIZE = 8;
@@ -42,28 +46,37 @@ const createEmptyGrid = (): CellType[][] => {
 
 export const useBlockBlast = create<GameState>((set, get) => ({
   grid: createEmptyGrid(),
-  availableBlocks: getRandomBlocks(3),
+  availableBlocks: getRandomBlocks(3).map(block => ({ ...block, used: false })),
   selectedBlockIndex: 0,
   hoverPosition: { row: 0, col: 0 },
   canPlace: false,
   score: 0,
   isGameOver: false,
+  isDragging: false,
+  usedBlockCount: 0,
   
   selectBlock: (index: number) => {
-    if (index >= 0 && index < get().availableBlocks.length) {
+    const { availableBlocks } = get();
+    
+    // Check if the block at this index exists and hasn't been used
+    if (index >= 0 && index < availableBlocks.length && !availableBlocks[index].used) {
       set({ selectedBlockIndex: index });
       
       // Recalculate canPlace with the new selected block
       const { hoverPosition } = get();
       if (hoverPosition) {
         const canPlace = get().canBlockBePlaced(
-          get().availableBlocks[index],
+          availableBlocks[index],
           hoverPosition.row,
           hoverPosition.col
         );
         set({ canPlace });
       }
     }
+  },
+  
+  setIsDragging: (isDragging: boolean) => {
+    set({ isDragging });
   },
   
   setHoverPosition: (position) => {
@@ -74,6 +87,9 @@ export const useBlockBlast = create<GameState>((set, get) => ({
     
     const { availableBlocks, selectedBlockIndex } = get();
     const selectedBlock = availableBlocks[selectedBlockIndex];
+    
+    // Skip if the selected block has been used
+    if (selectedBlock.used) return;
     
     const canPlace = get().canBlockBePlaced(
       selectedBlock,
@@ -87,6 +103,9 @@ export const useBlockBlast = create<GameState>((set, get) => ({
   canBlockBePlaced: (block: BlockType, startRow: number, startCol: number) => {
     const { grid } = get();
     const shape = block.shape;
+    
+    // Don't place if block has been used
+    if (block.used) return false;
     
     // Check if the entire block is within grid bounds and all cells are empty
     for (let i = 0; i < shape.length; i++) {
@@ -116,13 +135,18 @@ export const useBlockBlast = create<GameState>((set, get) => ({
       selectedBlockIndex, 
       hoverPosition, 
       canPlace,
-      grid 
+      grid,
+      usedBlockCount
     } = get();
     
     // If can't place, return early
     if (!canPlace || !hoverPosition) return;
     
     const selectedBlock = availableBlocks[selectedBlockIndex];
+    
+    // Skip if the block has been used
+    if (selectedBlock.used) return;
+    
     const newGrid = [...grid];
     
     // Place the block
@@ -143,16 +167,38 @@ export const useBlockBlast = create<GameState>((set, get) => ({
     // Play sound effect
     useAudio.getState().playHit();
     
-    // Update state
+    // Update the grid
     set({ grid: newGrid });
     
-    // Generate a new block to replace the used one
+    // Mark the block as used
     const newBlocks = [...availableBlocks];
-    newBlocks[selectedBlockIndex] = getRandomBlocks(1)[0];
+    newBlocks[selectedBlockIndex] = { ...newBlocks[selectedBlockIndex], used: true };
+    
+    // Increment used block count
+    const newUsedBlockCount = usedBlockCount + 1;
+    
+    // If all blocks are used, get new blocks
+    let updatedBlocks = newBlocks;
+    if (newUsedBlockCount >= 3) {
+      updatedBlocks = getRandomBlocks(3).map(block => ({ ...block, used: false }));
+      set({ usedBlockCount: 0 });
+    } else {
+      set({ usedBlockCount: newUsedBlockCount });
+    }
+    
+    // Select the next unused block if available
+    let nextUnusedIndex = selectedBlockIndex;
+    for (let i = 0; i < updatedBlocks.length; i++) {
+      if (!updatedBlocks[i].used) {
+        nextUnusedIndex = i;
+        break;
+      }
+    }
     
     set({ 
-      availableBlocks: newBlocks,
+      availableBlocks: updatedBlocks,
       canPlace: false,  // Reset canPlace until hover is updated
+      selectedBlockIndex: nextUnusedIndex,
     });
     
     // Check for completed rows
@@ -237,6 +283,9 @@ export const useBlockBlast = create<GameState>((set, get) => ({
     
     // Check if any block can be placed anywhere on the grid
     const canPlaceAnyBlock = availableBlocks.some(block => {
+      // Skip blocks that have been used
+      if (block.used) return false;
+      
       for (let row = 0; row < GRID_SIZE; row++) {
         for (let col = 0; col < GRID_SIZE; col++) {
           if (get().canBlockBePlaced(block, row, col)) {
@@ -279,12 +328,14 @@ export const useBlockBlast = create<GameState>((set, get) => ({
   resetGame: () => {
     set({
       grid: createEmptyGrid(),
-      availableBlocks: getRandomBlocks(3),
+      availableBlocks: getRandomBlocks(3).map(block => ({ ...block, used: false })),
       selectedBlockIndex: 0,
       hoverPosition: { row: 0, col: 0 },
       canPlace: false,
       score: 0,
-      isGameOver: false
+      isGameOver: false,
+      isDragging: false,
+      usedBlockCount: 0
     });
   }
 }));

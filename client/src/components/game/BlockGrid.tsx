@@ -9,19 +9,49 @@ const BlockGrid: React.FC = () => {
     availableBlocks, 
     selectedBlockIndex, 
     canPlace,
-    setHoverPosition
+    setHoverPosition,
+    placeBlock,
+    setIsDragging,
+    isDragging
   } = useBlockBlast();
   
   const selectedBlock = availableBlocks[selectedBlockIndex];
   
   const handleCellMouseEnter = (row: number, col: number) => {
-    setHoverPosition({ row, col });
+    if (isDragging) {
+      setHoverPosition({ row, col });
+    }
   };
   
-  const handleCellMouseLeave = () => {
-    // We keep the hover position when mouse leaves
-    // so keyboard controls can still work from last position
+  const handleCellMouseDown = (row: number, col: number) => {
+    setHoverPosition({ row, col });
+    setIsDragging(true);
   };
+  
+  const handleCellMouseUp = () => {
+    if (isDragging && canPlace) {
+      placeBlock();
+    }
+    setIsDragging(false);
+  };
+  
+  const handleMouseLeave = () => {
+    // Keep hover position for keyboard controls
+  };
+  
+  // Handle mouse up globally to ensure we capture the event
+  React.useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDragging) {
+        handleCellMouseUp();
+      }
+    };
+    
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => {
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [isDragging, canPlace]);
   
   // Visualize where the selected block would be placed
   const renderHoverOverlay = (row: number, col: number) => {
@@ -53,15 +83,23 @@ const BlockGrid: React.FC = () => {
   
   return (
     <div className="grid-container">
-      <div className="grid grid-cols-8 grid-rows-8 gap-1 bg-gray-700 p-2 rounded">
+      <div 
+        className="grid grid-cols-8 grid-rows-8 gap-1 bg-gray-700 p-2 rounded"
+        onMouseLeave={handleMouseLeave}
+      >
         {grid.map((row, rowIndex) => (
           row.map((cell, colIndex) => (
             <div 
               key={`${rowIndex}-${colIndex}`}
-              className="relative w-12 h-12 md:w-14 md:h-14 flex items-center justify-center border border-gray-600 rounded"
+              className="relative w-12 h-12 md:w-14 md:h-14 flex items-center justify-center border border-gray-600 rounded cursor-pointer"
               style={{ background: cell.filled ? cell.color : '#333' }}
               onMouseEnter={() => handleCellMouseEnter(rowIndex, colIndex)}
-              onMouseLeave={handleCellMouseLeave}
+              onMouseDown={() => handleCellMouseDown(rowIndex, colIndex)}
+              onClick={() => {
+                if (canPlace) {
+                  placeBlock();
+                }
+              }}
             >
               {hoverPosition && renderHoverOverlay(rowIndex, colIndex)}
               
