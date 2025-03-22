@@ -61,8 +61,9 @@ export const useBlockBlast = create<GameState>((set, get) => ({
   
   selectBlock: (index: number) => {
     const { availableBlocks } = get();
+    const unusedBlocks = availableBlocks.filter(block => !block.used);
     
-    // Check if the block at this index exists and hasn't been used
+    // Only allow selecting blocks that exist and aren't used
     if (index >= 0 && index < availableBlocks.length && !availableBlocks[index].used) {
       set({ selectedBlockIndex: index });
       
@@ -75,6 +76,14 @@ export const useBlockBlast = create<GameState>((set, get) => ({
           hoverPosition.col
         );
         set({ canPlace });
+      }
+      
+      // Auto-select first unused block if current selection is used
+      if (availableBlocks[index].used) {
+        const firstUnusedIndex = availableBlocks.findIndex(block => !block.used);
+        if (firstUnusedIndex !== -1) {
+          set({ selectedBlockIndex: firstUnusedIndex });
+        }
       }
     }
   },
