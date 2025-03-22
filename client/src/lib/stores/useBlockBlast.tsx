@@ -196,10 +196,12 @@ export const useBlockBlast = create<GameState>((set, get) => ({
     // Increment used block count
     const newUsedBlockCount = usedBlockCount + 1;
     
-    // If all blocks are used, get new blocks
+    // If all blocks are used, get new blocks based on grid state
     let updatedBlocks = newBlocks;
     if (newUsedBlockCount >= 3) {
-      updatedBlocks = getRandomBlocks(3).map(block => ({ ...block, used: false }));
+      // Analyze grid for gaps
+      const gaps = analyzeGridGaps(newGrid);
+      updatedBlocks = getRandomBlocksForGaps(gaps, 3).map(block => ({ ...block, used: false }));
       set({ usedBlockCount: 0 });
       nextUnusedIndex = 0;
     } else {
@@ -350,3 +352,79 @@ export const useBlockBlast = create<GameState>((set, get) => ({
     });
   }
 }));
+// Analyze grid for gaps and patterns
+const analyzeGridGaps = (grid: CellType[][]) => {
+  const gaps = {
+    horizontal: [] as number[],
+    vertical: [] as number[],
+    small: 0,
+    medium: 0,
+    large: 0
+  };
+  
+  // Check horizontal gaps
+  for (let row = 0; row < GRID_SIZE; row++) {
+    let gapSize = 0;
+    for (let col = 0; col < GRID_SIZE; col++) {
+      if (!grid[row][col].filled) {
+        gapSize++;
+      } else if (gapSize > 0) {
+        gaps.horizontal.push(gapSize);
+        if (gapSize <= 2) gaps.small++;
+        else if (gapSize <= 4) gaps.medium++;
+        else gaps.large++;
+        gapSize = 0;
+      }
+    }
+    if (gapSize > 0) {
+      gaps.horizontal.push(gapSize);
+      if (gapSize <= 2) gaps.small++;
+      else if (gapSize <= 4) gaps.medium++;
+      else gaps.large++;
+    }
+  }
+  
+  // Check vertical gaps
+  for (let col = 0; col < GRID_SIZE; col++) {
+    let gapSize = 0;
+    for (let row = 0; row < GRID_SIZE; row++) {
+      if (!grid[row][col].filled) {
+        gapSize++;
+      } else if (gapSize > 0) {
+        gaps.vertical.push(gapSize);
+        if (gapSize <= 2) gaps.small++;
+        else if (gapSize <= 4) gaps.medium++;
+        else gaps.large++;
+        gapSize = 0;
+      }
+    }
+    if (gapSize > 0) {
+      gaps.vertical.push(gapSize);
+      if (gapSize <= 2) gaps.small++;
+      else if (gapSize <= 4) gaps.medium++;
+      else gaps.large++;
+    }
+  }
+  
+  return gaps;
+};
+
+const getRandomBlocksForGaps = (gaps: any, count: number) => {
+  const blocks = [];
+  for (let i = 0; i < count; i++) {
+    // Favor shapes that fit common gaps
+    if (gaps.small > gaps.medium && gaps.small > gaps.large) {
+      blocks.push(shapes[Math.floor(Math.random() * 3)]); // Small shapes
+    } else if (gaps.medium > gaps.large) {
+      blocks.push(shapes[3 + Math.floor(Math.random() * 4)]); // Medium shapes
+    } else {
+      blocks.push(shapes[7 + Math.floor(Math.random() * 4)]); // Large shapes
+    }
+  }
+  return blocks.map(shape => ({
+    shape,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    id: Math.random().toString(36).substr(2, 9),
+    used: false
+  }));
+};
