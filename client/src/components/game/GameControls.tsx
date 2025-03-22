@@ -1,8 +1,11 @@
 import React, { useEffect } from 'react';
 import useKeyboardControls from '@/lib/hooks/useKeyboardControls';
 import { useAudio } from '@/lib/stores/useAudio';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 
 const GameControls: React.FC = () => {
+  const isMobile = useIsMobile();
+  
   // Initialize keyboard controls
   useKeyboardControls();
   
@@ -47,14 +50,28 @@ const GameControls: React.FC = () => {
         )}
       </button>
       
-      <div className="mt-4 p-3 bg-gray-700 rounded text-xs text-gray-300 w-32">
-        <div className="mb-2">Controls:</div>
-        <div className="flex flex-col space-y-1">
-          <div>Arrows: Move</div>
-          <div>SPACE: Place</div>
-          <div>1,2,3: Select</div>
+      {!isMobile && (
+        <div className="mt-4 p-3 bg-gray-700 rounded text-xs text-gray-300 w-40">
+          <div className="mb-2">Keyboard Controls:</div>
+          <div className="flex flex-col space-y-1">
+            <div>WASD / Arrows: Move</div>
+            <div>SPACE / Enter: Place</div>
+            <div>1,2,3: Select blocks</div>
+            <div>TAB: Cycle blocks</div>
+          </div>
         </div>
-      </div>
+      )}
+      
+      {isMobile && (
+        <div className="mt-4 p-3 bg-gray-700 rounded text-xs text-gray-300 w-40">
+          <div className="mb-2">Mobile Controls:</div>
+          <div className="flex flex-col space-y-1">
+            <div>Tap: Select block</div>
+            <div>Drag: Move block</div>
+            <div>Release: Place block</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

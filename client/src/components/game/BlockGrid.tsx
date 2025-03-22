@@ -1,8 +1,10 @@
 import React from 'react';
 import { useBlockBlast } from '@/lib/stores/useBlockBlast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 
 const BlockGrid: React.FC = () => {
+  const isMobile = useIsMobile();
   const { 
     grid, 
     hoverPosition, 
@@ -18,21 +20,40 @@ const BlockGrid: React.FC = () => {
   const selectedBlock = availableBlocks[selectedBlockIndex];
   
   const handleCellMouseEnter = (row: number, col: number) => {
-    if (isDragging) {
+    // On mobile, only update position during dragging
+    // On desktop, always update position on hover
+    if (isMobile) {
+      if (isDragging) {
+        setHoverPosition({ row, col });
+      }
+    } else {
       setHoverPosition({ row, col });
     }
   };
   
   const handleCellMouseDown = (row: number, col: number) => {
-    setHoverPosition({ row, col });
-    setIsDragging(true);
+    // Only set dragging state on mobile
+    if (isMobile) {
+      setHoverPosition({ row, col });
+      setIsDragging(true);
+    }
   };
   
   const handleCellMouseUp = () => {
-    if (isDragging && canPlace) {
+    // Only handle drag-and-drop on mobile
+    if (isMobile) {
+      if (isDragging && canPlace) {
+        placeBlock();
+      }
+      setIsDragging(false);
+    }
+  };
+  
+  const handleCellClick = () => {
+    // For desktop: click to place
+    if (!isMobile && canPlace) {
       placeBlock();
     }
-    setIsDragging(false);
   };
   
   const handleMouseLeave = () => {
@@ -41,6 +62,8 @@ const BlockGrid: React.FC = () => {
   
   // Handle mouse up globally to ensure we capture the event
   React.useEffect(() => {
+    if (!isMobile) return; // Only needed for mobile
+    
     const handleGlobalMouseUp = () => {
       if (isDragging) {
         handleCellMouseUp();
@@ -51,11 +74,11 @@ const BlockGrid: React.FC = () => {
     return () => {
       window.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [isDragging, canPlace]);
+  }, [isDragging, canPlace, isMobile]);
   
   // Visualize where the selected block would be placed
   const renderHoverOverlay = (row: number, col: number) => {
-    if (!hoverPosition) return null;
+    if (!hoverPosition || selectedBlock.used) return null;
     
     // Check if this cell would be affected by the currently hovered block
     const rowOffset = row - hoverPosition.row;
@@ -95,11 +118,7 @@ const BlockGrid: React.FC = () => {
               style={{ background: cell.filled ? cell.color : '#333' }}
               onMouseEnter={() => handleCellMouseEnter(rowIndex, colIndex)}
               onMouseDown={() => handleCellMouseDown(rowIndex, colIndex)}
-              onClick={() => {
-                if (canPlace) {
-                  placeBlock();
-                }
-              }}
+              onClick={handleCellClick}
             >
               {hoverPosition && renderHoverOverlay(rowIndex, colIndex)}
               

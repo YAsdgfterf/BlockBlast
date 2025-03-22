@@ -1,8 +1,10 @@
 import React from 'react';
 import Block from './Block';
 import { useBlockBlast } from '@/lib/stores/useBlockBlast';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 
 const BlockSelector: React.FC = () => {
+  const isMobile = useIsMobile();
   const { availableBlocks, selectedBlockIndex, selectBlock, usedBlockCount } = useBlockBlast();
   
   return (
@@ -22,8 +24,10 @@ const BlockSelector: React.FC = () => {
         <div className="mt-2 text-xs text-gray-400 text-center">
           {usedBlockCount === 3 ? (
             <span className="text-yellow-400">Place all blocks to get new ones!</span>
-          ) : (
+          ) : isMobile ? (
             <span>Click on a block to select it, then place on the grid</span>
+          ) : (
+            <span>Use WASD/Arrow keys to move, SPACE to place, 1-2-3 to select blocks</span>
           )}
         </div>
       </div>
