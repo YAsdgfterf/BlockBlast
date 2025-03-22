@@ -1,10 +1,10 @@
 import React from 'react';
 import { useBlockBlast } from '@/lib/stores/useBlockBlast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useIsMobile } from '@/hooks/use-is-mobile';
+import { useDeviceDetection } from '@/hooks/use-is-mobile';
 
 const BlockGrid: React.FC = () => {
-  const isMobile = useIsMobile();
+  const { isPC, isTouchDevice, deviceType } = useDeviceDetection();
   const { 
     grid, 
     hoverPosition, 
@@ -19,29 +19,33 @@ const BlockGrid: React.FC = () => {
   
   const selectedBlock = availableBlocks[selectedBlockIndex];
   
+  // Display device type indicator for debugging
+  React.useEffect(() => {
+    console.log(`Current device: ${deviceType}`);
+    console.log(`Touch enabled: ${isTouchDevice}`);
+  }, [deviceType, isTouchDevice]);
+  
   const handleCellMouseEnter = (row: number, col: number) => {
-    // On mobile, only update position during dragging
-    // On desktop, always update position on hover
-    if (isMobile) {
-      if (isDragging) {
-        setHoverPosition({ row, col });
-      }
-    } else {
+    if (isPC) {
+      // PC users: always update position on hover for the preview
+      setHoverPosition({ row, col });
+    } else if (isTouchDevice && isDragging) {
+      // Touch devices: only update position while dragging
       setHoverPosition({ row, col });
     }
   };
   
   const handleCellMouseDown = (row: number, col: number) => {
-    // Only set dragging state on mobile
-    if (isMobile) {
+    if (isTouchDevice) {
+      // Only set dragging state on touch devices
       setHoverPosition({ row, col });
       setIsDragging(true);
     }
   };
   
   const handleCellMouseUp = () => {
-    // Only handle drag-and-drop on mobile
-    if (isMobile) {
+    if (isTouchDevice) {
+      // Only handle drag-and-drop on touch devices
       if (isDragging && canPlace) {
         placeBlock();
       }
@@ -50,9 +54,10 @@ const BlockGrid: React.FC = () => {
   };
   
   const handleCellClick = () => {
-    // For desktop: click to place
-    if (!isMobile && canPlace) {
-      placeBlock();
+    // For PC: just check if we can place, keyboard controls handle the rest
+    if (isPC && canPlace) {
+      // PC users will use keyboard for placement, so no click-to-place
+      // They'll just use SPACE key
     }
   };
   
@@ -60,9 +65,9 @@ const BlockGrid: React.FC = () => {
     // Keep hover position for keyboard controls
   };
   
-  // Handle mouse up globally to ensure we capture the event
+  // Handle mouse/touch up globally to ensure we capture the event
   React.useEffect(() => {
-    if (!isMobile) return; // Only needed for mobile
+    if (!isTouchDevice) return; // Only needed for touch devices
     
     const handleGlobalMouseUp = () => {
       if (isDragging) {
@@ -71,10 +76,13 @@ const BlockGrid: React.FC = () => {
     };
     
     window.addEventListener('mouseup', handleGlobalMouseUp);
+    window.addEventListener('touchend', handleGlobalMouseUp);
+    
     return () => {
       window.removeEventListener('mouseup', handleGlobalMouseUp);
+      window.removeEventListener('touchend', handleGlobalMouseUp);
     };
-  }, [isDragging, canPlace, isMobile]);
+  }, [isDragging, canPlace, isTouchDevice]);
   
   // Visualize where the selected block would be placed
   const renderHoverOverlay = (row: number, col: number) => {
@@ -106,6 +114,11 @@ const BlockGrid: React.FC = () => {
   
   return (
     <div className="grid-container">
+      {/* Optional device type indicator in top-left corner */}
+      <div className="absolute top-0 left-0 bg-gray-800 text-white text-xs p-1 rounded">
+        {deviceType.toUpperCase()}
+      </div>
+      
       <div 
         className="grid grid-cols-8 grid-rows-8 gap-1 bg-gray-700 p-2 rounded"
         onMouseLeave={handleMouseLeave}
@@ -119,6 +132,21 @@ const BlockGrid: React.FC = () => {
               onMouseEnter={() => handleCellMouseEnter(rowIndex, colIndex)}
               onMouseDown={() => handleCellMouseDown(rowIndex, colIndex)}
               onClick={handleCellClick}
+              onTouchMove={(e) => {
+                // Get touch position and convert to grid cell
+                if (isTouchDevice && isDragging) {
+                  // This is a simplified approach - for a real implementation
+                  // you would need to calculate the actual grid cell from touch coordinates
+                  const touch = e.touches[0];
+                  const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                  const cellData = element && element.getAttribute('data-cell');
+                  if (cellData) {
+                    const [row, col] = cellData.split('-').map(Number);
+                    handleCellMouseEnter(row, col);
+                  }
+                }
+              }}
+              data-cell={`${rowIndex}-${colIndex}`}
             >
               {hoverPosition && renderHoverOverlay(rowIndex, colIndex)}
               

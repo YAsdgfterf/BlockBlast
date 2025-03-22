@@ -1,11 +1,25 @@
 import React from 'react';
 import Block from './Block';
 import { useBlockBlast } from '@/lib/stores/useBlockBlast';
-import { useIsMobile } from '@/hooks/use-is-mobile';
+import { useDeviceDetection } from '@/hooks/use-is-mobile';
 
 const BlockSelector: React.FC = () => {
-  const isMobile = useIsMobile();
+  const { isPC, isTouchDevice, deviceType } = useDeviceDetection();
   const { availableBlocks, selectedBlockIndex, selectBlock, usedBlockCount } = useBlockBlast();
+  
+  const getInstructions = () => {
+    if (usedBlockCount === 3) {
+      return <span className="text-yellow-400">Place all blocks to get new ones!</span>;
+    }
+    
+    if (isPC) {
+      return <span>Use WASD/Arrow keys to move, SPACE to place, 1-2-3 to select blocks</span>;
+    } else if (deviceType === 'tablet') {
+      return <span>Tap a block to select, then drag and drop to place it</span>;
+    } else {
+      return <span>Tap a block, then drag and drop to place it</span>;
+    }
+  };
   
   return (
     <div className="block-selector">
@@ -22,13 +36,7 @@ const BlockSelector: React.FC = () => {
           ))}
         </div>
         <div className="mt-2 text-xs text-gray-400 text-center">
-          {usedBlockCount === 3 ? (
-            <span className="text-yellow-400">Place all blocks to get new ones!</span>
-          ) : isMobile ? (
-            <span>Click on a block to select it, then place on the grid</span>
-          ) : (
-            <span>Use WASD/Arrow keys to move, SPACE to place, 1-2-3 to select blocks</span>
-          )}
+          {getInstructions()}
         </div>
       </div>
     </div>
