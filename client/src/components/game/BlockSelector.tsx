@@ -22,17 +22,19 @@ const BlockSelector: React.FC = () => {
   };
   
   return (
-    <div className="block-selector">
-      <div className="bg-gray-800 p-3 rounded-lg">
+    <div className="block-selector w-[250px]">
+      <div className="bg-gray-800 p-3 rounded-lg w-[250px]">
         <h3 className="text-white text-center mb-2 font-bold">Available Blocks</h3>
         <div className="flex justify-center gap-4">
-          {availableBlocks.map((block, index) => (
-            <Block 
-              key={block.id}
-              block={block}
-              selected={index === selectedBlockIndex && !block.used}
-              onClick={() => selectBlock(index)}
-            />
+          {availableBlocks
+            .filter(block => !block.used)
+            .map((block, index) => (
+              <Block 
+                key={block.id}
+                block={block}
+                selected={availableBlocks.indexOf(block) === selectedBlockIndex}
+                onClick={() => selectBlock(availableBlocks.indexOf(block))}
+              />
           ))}
         </div>
         <div className="mt-2 text-xs text-gray-400 text-center">
