@@ -174,6 +174,12 @@ export const useBlockBlast = create<GameState>((set, get) => ({
     // Update the grid
     set({ grid: newGrid });
     
+    // Find next unused block before marking current as used
+    let nextUnusedIndex = (selectedBlockIndex + 1) % availableBlocks.length;
+    while (availableBlocks[nextUnusedIndex].used && nextUnusedIndex !== selectedBlockIndex) {
+      nextUnusedIndex = (nextUnusedIndex + 1) % availableBlocks.length;
+    }
+    
     // Mark the block as used
     const newBlocks = [...availableBlocks];
     newBlocks[selectedBlockIndex] = { ...newBlocks[selectedBlockIndex], used: true };
@@ -186,17 +192,9 @@ export const useBlockBlast = create<GameState>((set, get) => ({
     if (newUsedBlockCount >= 3) {
       updatedBlocks = getRandomBlocks(3).map(block => ({ ...block, used: false }));
       set({ usedBlockCount: 0 });
+      nextUnusedIndex = 0;
     } else {
       set({ usedBlockCount: newUsedBlockCount });
-    }
-    
-    // Select the next unused block if available
-    let nextUnusedIndex = selectedBlockIndex;
-    for (let i = 0; i < updatedBlocks.length; i++) {
-      if (!updatedBlocks[i].used) {
-        nextUnusedIndex = i;
-        break;
-      }
     }
     
     set({ 
