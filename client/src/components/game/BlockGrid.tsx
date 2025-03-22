@@ -16,15 +16,15 @@ const BlockGrid: React.FC = () => {
     setIsDragging,
     isDragging
   } = useBlockBlast();
-  
+
   const selectedBlock = availableBlocks[selectedBlockIndex];
-  
+
   // Display device type indicator for debugging
   React.useEffect(() => {
     console.log(`Current device: ${deviceType}`);
     console.log(`Touch enabled: ${isTouchDevice}`);
   }, [deviceType, isTouchDevice]);
-  
+
   const handleCellMouseEnter = (row: number, col: number) => {
     if (isPC) {
       // PC users: always update position on hover for the preview
@@ -34,7 +34,7 @@ const BlockGrid: React.FC = () => {
       setHoverPosition({ row, col });
     }
   };
-  
+
   const handleCellMouseDown = (row: number, col: number) => {
     if (isTouchDevice) {
       // Only set dragging state on touch devices
@@ -42,7 +42,7 @@ const BlockGrid: React.FC = () => {
       setIsDragging(true);
     }
   };
-  
+
   const handleCellMouseUp = () => {
     if (isTouchDevice) {
       // Only handle drag-and-drop on touch devices
@@ -52,7 +52,7 @@ const BlockGrid: React.FC = () => {
       setIsDragging(false);
     }
   };
-  
+
   const handleCellClick = () => {
     // For PC: just check if we can place, keyboard controls handle the rest
     if (isPC && canPlace) {
@@ -60,38 +60,50 @@ const BlockGrid: React.FC = () => {
       // They'll just use SPACE key
     }
   };
-  
+
   const handleMouseLeave = () => {
     // Keep hover position for keyboard controls
   };
-  
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isPC || !selectedBlock || selectedBlock.used) return;
+    const gridContainer = document.querySelector('.grid-container') as HTMLElement;
+    const rect = gridContainer.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const col = Math.floor(x / (rect.width / 8));
+    const row = Math.floor(y / (rect.height / 8));
+    setHoverPosition({ row, col });
+  };
+
+
   // Handle mouse/touch up globally to ensure we capture the event
   React.useEffect(() => {
     if (!isTouchDevice) return; // Only needed for touch devices
-    
+
     const handleGlobalMouseUp = () => {
       if (isDragging) {
         handleCellMouseUp();
       }
     };
-    
+
     window.addEventListener('mouseup', handleGlobalMouseUp);
     window.addEventListener('touchend', handleGlobalMouseUp);
-    
+
     return () => {
       window.removeEventListener('mouseup', handleGlobalMouseUp);
       window.removeEventListener('touchend', handleGlobalMouseUp);
     };
   }, [isDragging, canPlace, isTouchDevice]);
-  
+
   // Visualize where the selected block would be placed
   const renderHoverOverlay = (row: number, col: number) => {
     if (!hoverPosition || selectedBlock.used) return null;
-    
+
     // Check if this cell would be affected by the currently hovered block
     const rowOffset = row - hoverPosition.row;
     const colOffset = col - hoverPosition.col;
-    
+
     // Only render overlay if this cell is within the bounds of the shape
     if (
       rowOffset >= 0 && 
@@ -108,26 +120,27 @@ const BlockGrid: React.FC = () => {
         ></div>
       );
     }
-    
+
     return null;
   };
-  
+
   return (
-    <div className="grid-container">
+    <div className="grid-container w-[500px] h-[500px]">
       {/* Optional device type indicator in top-left corner */}
       <div className="absolute top-0 left-0 bg-gray-800 text-white text-xs p-1 rounded">
         {deviceType.toUpperCase()}
       </div>
-      
+
       <div 
-        className="grid grid-cols-8 grid-rows-8 gap-1 bg-gray-700 p-2 rounded"
+        className="grid grid-cols-8 grid-rows-8 gap-1 bg-gray-700 p-2 rounded w-[500px] h-[500px]"
+        onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
         {grid.map((row, rowIndex) => (
           row.map((cell, colIndex) => (
             <div 
               key={`${rowIndex}-${colIndex}`}
-              className="relative w-12 h-12 md:w-14 md:h-14 flex items-center justify-center border border-gray-600 rounded cursor-pointer"
+              className="relative grid-cell flex items-center justify-center border border-gray-600 rounded cursor-pointer"
               style={{ background: cell.filled ? cell.color : '#333' }}
               onMouseEnter={() => handleCellMouseEnter(rowIndex, colIndex)}
               onMouseDown={() => handleCellMouseDown(rowIndex, colIndex)}
@@ -149,7 +162,7 @@ const BlockGrid: React.FC = () => {
               data-cell={`${rowIndex}-${colIndex}`}
             >
               {hoverPosition && renderHoverOverlay(rowIndex, colIndex)}
-              
+
               <AnimatePresence>
                 {cell.filled && (
                   <motion.div 
