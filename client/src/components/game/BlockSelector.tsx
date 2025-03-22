@@ -11,14 +11,7 @@ const BlockSelector: React.FC = () => {
     if (usedBlockCount === 3) {
       return <span className="text-yellow-400">Place all blocks to get new ones!</span>;
     }
-    
-    if (isPC) {
-      return <span>Use WASD/Arrow keys to move, SPACE to place, 1-2-3 to select blocks</span>;
-    } else if (deviceType === 'tablet') {
-      return <span>Tap a block to select, then drag and drop to place it</span>;
-    } else {
-      return <span>Tap a block, then drag and drop to place it</span>;
-    }
+    return null;
   };
   
   return (
