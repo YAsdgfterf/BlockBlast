@@ -33,6 +33,10 @@ export type GameState = {
   resetGame: () => void;
   moveHover: (direction: 'up' | 'down' | 'left' | 'right') => void;
   setIsDragging: (isDragging: boolean) => void;
+  
+  // Helper functions
+  canBlockBePlaced: (block: BlockType, startRow: number, startCol: number) => boolean;
+  checkGameOver: () => void;
 };
 
 const GRID_SIZE = 8;

@@ -3,7 +3,7 @@ import Block from './Block';
 import { useBlockBlast } from '@/lib/stores/useBlockBlast';
 
 const BlockSelector: React.FC = () => {
-  const { availableBlocks, selectedBlockIndex, selectBlock } = useBlockBlast();
+  const { availableBlocks, selectedBlockIndex, selectBlock, usedBlockCount } = useBlockBlast();
   
   return (
     <div className="block-selector">
@@ -14,13 +14,17 @@ const BlockSelector: React.FC = () => {
             <Block 
               key={block.id}
               block={block}
-              selected={index === selectedBlockIndex}
+              selected={index === selectedBlockIndex && !block.used}
               onClick={() => selectBlock(index)}
             />
           ))}
         </div>
         <div className="mt-2 text-xs text-gray-400 text-center">
-          Press 1, 2, 3 or TAB to switch blocks
+          {usedBlockCount === 3 ? (
+            <span className="text-yellow-400">Place all blocks to get new ones!</span>
+          ) : (
+            <span>Click on a block to select it, then place on the grid</span>
+          )}
         </div>
       </div>
     </div>

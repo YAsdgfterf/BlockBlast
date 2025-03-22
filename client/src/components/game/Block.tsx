@@ -9,16 +9,20 @@ interface BlockProps {
 }
 
 const Block: React.FC<BlockProps> = ({ block, selected, onClick }) => {
-  const maxSize = 4; // Maximum possible size of a block shape
+  const isUsed = block.used || false;
   
   return (
     <motion.div 
-      className={`block-container p-2 rounded-md cursor-pointer transition-all ${
-        selected ? 'bg-gray-600 ring-2 ring-white' : 'bg-gray-700 hover:bg-gray-600'
+      className={`block-container p-2 rounded-md transition-all ${
+        isUsed 
+          ? 'bg-gray-900 opacity-40 cursor-not-allowed' 
+          : selected 
+            ? 'bg-gray-600 ring-2 ring-white cursor-pointer' 
+            : 'bg-gray-700 hover:bg-gray-600 cursor-pointer'
       }`}
-      onClick={onClick}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
+      onClick={isUsed ? undefined : onClick}
+      whileHover={isUsed ? {} : { scale: 1.05 }}
+      whileTap={isUsed ? {} : { scale: 0.95 }}
     >
       <div className="grid grid-cols-3 grid-rows-3 gap-1 p-1">
         {Array.from({ length: block.shape.length }).map((_, rowIndex) => (
@@ -40,6 +44,12 @@ const Block: React.FC<BlockProps> = ({ block, selected, onClick }) => {
           })
         ))}
       </div>
+      
+      {isUsed && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-white font-bold text-xs">USED</span>
+        </div>
+      )}
     </motion.div>
   );
 };
