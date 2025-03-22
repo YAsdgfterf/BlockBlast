@@ -1,24 +1,19 @@
 import React, { useEffect } from 'react';
-import useKeyboardControls from '@/lib/hooks/useKeyboardControls';
-import { useAudio } from '@/lib/stores/useAudio';
 import { useDeviceDetection } from '@/hooks/use-is-mobile';
+import { useKeyboardControls } from '@/lib/hooks/useKeyboardControls';
+import { useAudio } from '@/lib/stores/useAudio';
 
 const GameControls: React.FC = () => {
-  const { isPC, deviceType } = useDeviceDetection();
-  
-  // Initialize keyboard controls
   useKeyboardControls();
-  
   const { isMuted, toggleMute, backgroundMusic } = useAudio();
-  
-  // Start playing background music when the component mounts
+
   useEffect(() => {
     if (backgroundMusic && !isMuted) {
       backgroundMusic.play().catch(error => {
         console.log("Background music prevented:", error);
       });
     }
-    
+
     return () => {
       if (backgroundMusic) {
         backgroundMusic.pause();
@@ -26,45 +21,7 @@ const GameControls: React.FC = () => {
       }
     };
   }, [backgroundMusic, isMuted]);
-  
-  const renderControlsHelp = () => {
-    if (isPC) {
-      return (
-        <div className="mt-4 p-3 bg-gray-700 rounded text-xs text-gray-300 w-40">
-          <div className="mb-2">Keyboard Controls:</div>
-          <div className="flex flex-col space-y-1">
-            <div>WASD / Arrows: Move</div>
-            <div>SPACE / Enter: Place</div>
-            <div>1,2,3: Select blocks</div>
-            <div>TAB: Cycle blocks</div>
-          </div>
-        </div>
-      );
-    } else if (deviceType === 'tablet') {
-      return (
-        <div className="mt-4 p-3 bg-gray-700 rounded text-xs text-gray-300 w-40">
-          <div className="mb-2">Tablet Controls:</div>
-          <div className="flex flex-col space-y-1">
-            <div>Tap: Select block</div>
-            <div>Drag: Move block</div>
-            <div>Release: Place block</div>
-          </div>
-        </div>
-      );
-    } else {
-      return (
-        <div className="mt-4 p-3 bg-gray-700 rounded text-xs text-gray-300 w-40">
-          <div className="mb-2">Mobile Controls:</div>
-          <div className="flex flex-col space-y-1">
-            <div>Tap: Select block</div>
-            <div>Drag: Move block</div>
-            <div>Release: Place block</div>
-          </div>
-        </div>
-      );
-    }
-  };
-  
+
   return (
     <div className="game-controls absolute top-2 right-2">
       <button 
@@ -87,8 +44,6 @@ const GameControls: React.FC = () => {
           </svg>
         )}
       </button>
-      
-      {renderControlsHelp()}
     </div>
   );
 };
